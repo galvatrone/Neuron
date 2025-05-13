@@ -11,6 +11,13 @@ layers.py — нейронные слои и attention
 
 import numpy as np
 
+class Embedding:
+    def __init__(self, vocab_size, embedding_dim):
+        self.embedding_matrix = np.random.randn(vocab_size, embedding_dim)
+
+    def forward(self, token_ids):
+        return self.embedding_matrix[token_ids]  # Просто вытаскивает векторы
+
 class Dense:
     def __init__(self, input_dim, output_dim):
         self.weights = np.random.randn(input_dim, output_dim)
