@@ -1,49 +1,21 @@
-"""
-model.py — Архитектура нейросети (мини-GPT)
--------------------------------------------
-Собирает слои из layers.py в единый трансформер-блок и модель.
+# model.py
 
-- TransformerBlock: слой из attention + FFN + нормализация
-- MiniGPT: простая LLM модель на основе нескольких блоков
-"""
+from layers import Dense, LayerNorm, MultiHeadAttention
 
-from layers import Dense, LayerNorm, MultiHeadAttention, FeedForward
+class TransformerModel:
+    def __init__(self, vocab_size, embedding_dim, num_layers, num_heads):
+        self.embedding_dim = embedding_dim
+        self.num_layers = num_layers
+        self.num_heads = num_heads
 
-class TransformerBlock:
-    """
-    Один трансформерный блок, который включает внимание и FeedForward.
-    """
-    def __init__(self, dim, num_heads):
-        self.attention = MultiHeadAttention(num_heads, dim)
-        self.feed_forward = FeedForward(dim)
-        self.norm1 = LayerNorm(dim)
-        self.norm2 = LayerNorm(dim)
+        self.embedding = Dense(vocab_size, embedding_dim)  # Эмбеддинг для словаря
+        self.attention_layers = [MultiHeadAttention(num_heads, embedding_dim) for _ in range(num_layers)]
+        self.feed_forward_layers = [Dense(embedding_dim, embedding_dim * 4) for _ in range(num_layers)]
+        self.output_layer = Dense(embedding_dim, vocab_size)
 
     def forward(self, x):
-        """
-        Прямой проход через трансформерный блок.
-        """
-        x = self.norm1.forward(x)
-        attention_output = self.attention.forward(x)
-        x = x + attention_output  # residual connection
-        x = self.norm2.forward(x)
-        ff_output = self.feed_forward.forward(x)
-        return x + ff_output  # residual connection
-
-
-class MiniGPT:
-    """
-    Мини-версии GPT с несколькими слоями.
-    Включает несколько трансформерных блоков.
-    """
-    def __init__(self, num_layers, dim, num_heads):
-        self.layers = [TransformerBlock(dim, num_heads) for _ in range(num_layers)]
-        self.final_layer = Dense(dim, dim)  # Финальный слой для предсказания
-
-    def forward(self, x):
-        """
-        Прямой проход через всю модель.
-        """
-        for layer in self.layers:
-            x = layer.forward(x)
-        return self.final_layer.forward(x)
+        x = self.embedding.forward(x)
+        for i in range(self.num_layers):
+            x = self.attention_layers[i].forward(x)
+            x = self.feed_forward_layers[i].forward(x)
+        return self.output_layer.forward(x)
