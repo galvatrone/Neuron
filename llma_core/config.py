@@ -12,6 +12,7 @@ CONFIG = {
     "embedding_dim": 128,
     "num_heads": 4,
     "num_layers": 4,
+    "embedding ": 128,
     "sequence_length": 128,
     "learning_rate": 0.001,
     "epochs": 10

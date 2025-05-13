@@ -10,15 +10,18 @@ layers.py — нейронные слои и attention
 # layers.py
 
 import numpy as np
+# layers.py
 
 class Embedding:
     def __init__(self, vocab_size, embedding_dim):
-        # создаём веса размером (vocab_size, embedding_dim)
+        self.vocab_size = vocab_size
+        self.embedding_dim = embedding_dim
+        # Инициализация матрицы эмбеддингов
         self.weights = np.random.randn(vocab_size, embedding_dim)
 
-    def forward(self, token_ids):
-        # token_ids должен быть двумерным массивом (batch_size, seq_length)
-        return self.weights[token_ids]  # извлекаем векторы по ID токенов
+    def forward(self, x):
+        # x должен быть матрицей размера (batch_size, seq_length)
+        return self.weights[x]  # Преобразуем токены в эмбеддинги
 
 class Dense:
     def __init__(self, input_dim, output_dim):
@@ -46,25 +49,41 @@ def softmax(x):
     return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
 class MultiHeadAttention:
-    def __init__(self, num_heads, dim, embedding_dim):
+    def __init__(self, num_heads, embedding_dim):
         self.num_heads = num_heads
-        self.dim = dim
-        # Исправляем инициализацию весов
-        self.Wq = np.random.randn(embedding_dim, dim)  # теперь размерность (512, dim)
-        self.Wk = np.random.randn(embedding_dim, dim)  # аналогично для Wk
-        self.Wv = np.random.randn(embedding_dim, dim)  # аналогично для Wv
+        self.embedding_dim = embedding_dim  # Размерность эмбеддинга
+
+        self.Wq = np.random.randn(embedding_dim, embedding_dim)
+        self.Wk = np.random.randn(embedding_dim, embedding_dim)
+        self.Wv = np.random.randn(embedding_dim, embedding_dim)
 
     def forward(self, x):
-        # Проверяем размерности для матричного умножения
-        Q = np.dot(x, self.Wq)  # x: (128, 512), Wq: (512, dim)
-        K = np.dot(x, self.Wk)  # K: (128, dim)
-        V = np.dot(x, self.Wv)  # V: (128, dim)
+        # Проверяем форму входа
+        if len(x.shape) != 3:
+            raise ValueError(f"Expected input of shape (batch_size, seq_length, embedding_dim), but got {x.shape}")
 
-        # Далее вычисляем внимание
-        scores = np.dot(Q, K.T) / np.sqrt(self.dim)
+        Q = np.dot(x, self.Wq)
+        K = np.dot(x, self.Wk)
+        V = np.dot(x, self.Wv)
+
+        batch_size, seq_length, _ = Q.shape  # Получаем размерности
+
+        # Убедитесь, что размерности правильные для многоголового внимания
+        if Q.shape[2] != self.embedding_dim:
+            raise ValueError(f"Embedding dimension mismatch: expected {self.embedding_dim}, but got {Q.shape[2]}")
+
+        # Перемешиваем и разделяем на головы
+        Q = Q.reshape(batch_size, self.num_heads, seq_length, self.embedding_dim // self.num_heads)
+        K = K.reshape(batch_size, self.num_heads, seq_length, self.embedding_dim // self.num_heads)
+        V = V.reshape(batch_size, self.num_heads, seq_length, self.embedding_dim // self.num_heads)
+
+        scores = np.matmul(Q, K.transpose(0, 1, 3, 2)) / np.sqrt(self.embedding_dim // self.num_heads)
         attention_weights = softmax(scores)
-        output = np.dot(attention_weights, V)
+        output = np.matmul(attention_weights, V)
+
+        output = output.reshape(batch_size, seq_length, self.embedding_dim)
         return output
+
 class FeedForward:
     """
     Полносвязная нейросеть с активацией.
