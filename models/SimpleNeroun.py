@@ -1,29 +1,5 @@
 import numpy as np
 
-# Функция активации (например, ReLU)
-def relu(x):
-    return np.maximum(0, x)
-
-# Функция для вычисления выхода нейрона
-def neuron(inputs, weights, bias):
-    return relu(np.dot(inputs, weights) + bias)
-
-# Пример использования
-inputs = np.array([1.0, 2.0, 3.0])  # Входные данные
-weights = np.array([0.5, 0.3, -0.7])  # Веса
-bias = 2.0  # Смещение
-
-output = neuron(inputs, weights, bias)
-print("Выход нейрона:", output)
-
-def self_attention(query, key, value):
-    # Вычисление внимания (скорость внимания) для каждого слова
-    attention_score = np.dot(query, key.T)  # Простейшая матрица внимания
-    attention_weight = np.softmax(attention_score, axis=-1)
-    output = np.dot(attention_weight, value)
-    return output
-
-
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size):
