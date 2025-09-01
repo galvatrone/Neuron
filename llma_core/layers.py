@@ -2,7 +2,7 @@
 layers.py — нейронные слои и attention
 --------------------------------------
 Содержит строительные блоки модели:
-- Dense слой
+- Dense слой // 
 - LayerNorm
 - MultiHeadAttention
 - FeedForward нейросеть
@@ -21,6 +21,8 @@ class Embedding:
 
     def forward(self, x):
         # x должен быть матрицей размера (batch_size, seq_length)
+        if len(x.shape) == 1:  # Если x одномерный, добавляем batch размерность
+            x = x[np.newaxis, :]
         return self.weights[x]  # Преобразуем токены в эмбеддинги
 
 class Dense:
@@ -34,13 +36,14 @@ class Dense:
 
 class LayerNorm:
     def __init__(self, dim, eps=1e-5):
-        self.gamma = np.ones(dim)
-        self.beta = np.zeros(dim)
+        self.gamma = np.ones((1, 1, dim))  # Размерность соответствует embedding_dim
+        self.beta = np.zeros((1, 1, dim))  # Размерность соответствует embedding_dim
         self.eps = eps
 
     def forward(self, x):
-        mean = np.mean(x, axis=-1, keepdims=True)
-        var = np.var(x, axis=-1, keepdims=True)
+        # x имеет форму (batch_size, seq_length, embedding_dim)
+        mean = np.mean(x, axis=-1, keepdims=True)  # Среднее по embedding_dim
+        var = np.var(x, axis=-1, keepdims=True)    # Дисперсия по embedding_dim
         x_normalized = (x - mean) / np.sqrt(var + self.eps)
         return self.gamma * x_normalized + self.beta
 
